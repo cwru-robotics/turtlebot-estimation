@@ -1,0 +1,9 @@
+Available parameters for experiment launch files:
+
+- gui : Display Gazebo gui and RVIZ, defaults to false
+- sensor_record : Record all sensor data to CSV files with the sensor_record node, defaults to true
+- sim_time : How long to run simulation for, in seconds. Defaults to 60.
+- debug : Controls printing of debug messages, defaults to false.
+- gps : Includes GPS in simulation as an input to the filters, defaults to true
+- noisy : Injects noise into GPS and odometry, defaults to true
+- stationary : Make Turtlebot stationary, alternative is 2D motion. Defaults to false. 

@@ -1,0 +1,8 @@
+cwru_turtlebot launch files
+
+Directory Structure:
+- experiments : Top level launch files for running a one robot or two robot experiment
+- gazebo : Launch files related to running all necessary Gazebo components for the simulation
+- includes : Launch files included by others with no specific category
+- kobuki : Launch files for the Kobuki base
+- robots : Launch files for the TurtleBots 

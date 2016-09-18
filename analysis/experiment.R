@@ -52,34 +52,10 @@ discrete$y_error <- gazebo$y_position - discrete$y_position
 discrete$yaw_error <- vector_correct_yaw(gazebo$yaw - discrete$yaw)
 discrete$position_error <- sqrt(discrete$x_error ^ 2 + discrete$y_error ^ 2)
 
-# for (i in 1:NROW(discrete$yaw)) {
-#     yaw <- gazebo$yaw[i] - discrete$yaw[i]
-#
-#     while (yaw > pi) {
-#         yaw <- yaw - 2*pi
-#     }
-#     while (yaw < -1*pi){
-#         yaw <- yaw + 2*pi
-#     }
-#     discrete$yaw_error[i] <- yaw
-# }
-
 continuous$x_error <- gazebo$x_position - continuous$x_position
 continuous$y_error <- gazebo$y_position - continuous$y_position
 continuous$yaw_error <- vector_correct_yaw(gazebo$yaw - continuous$yaw)
 continuous$position_error <- sqrt(continuous$x_error ^ 2 + continuous$y_error ^ 2)
-
-# for (i in 1:NROW(continuous$yaw)) {
-#     yaw <- gazebo$yaw[i] - continuous$yaw[i]
-#
-#     while (yaw > pi) {
-#         yaw <- yaw - 2*pi
-#     }
-#     while (yaw < -1*pi){
-#         yaw <- yaw + 2*pi
-#     }
-#     continuous$yaw_error[i] <- yaw
-# }
 
 external_data_averages <- lapply(external_data_tables, FUN=function(table){table$count[length(table)]})
 

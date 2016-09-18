@@ -1,0 +1,10 @@
+The cwru_turtlebot package
+
+Directory structure:
+- action : Contains action messages
+- launch : Contains launch files
+- scripts : Contains useful script for running a sequence of simulations automatically
+- src : Contains all source code
+- msg : Contains ROS msg files
+- param : Contains .yaml files for passing parameters to launch files/nodes
+- urdf : Contains modified URDF files for the TurtleBot

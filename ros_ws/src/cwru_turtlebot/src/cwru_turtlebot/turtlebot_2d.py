@@ -1,17 +1,16 @@
 #!/usr/bin/env python
 
-import rospy
 import random
-import math
 
+import rospy
 from geometry_msgs.msg import Twist, PoseStamped
+from move_base_msgs.msg import MoveBaseGoal
+
+from helpers import convert_quaternion_to_yaw
 from turtlebot import TurtleBot
-from move_base_msgs.msg import MoveBaseActionGoal, MoveBaseGoal
-from helpers import convert_quaternion_to_yaw, correct_angle
 
 
 class TurtleBot2D(TurtleBot, object):
-
     def __init__(self, linear_speed=.2, angular_speed=.2):
         super(TurtleBot2D, self).__init__()
 
@@ -23,7 +22,8 @@ class TurtleBot2D(TurtleBot, object):
         self.angular_speed = angular_speed  # expressed in rad/s
         rospy.loginfo("Completed TurtleBot2D initialization")
 
-    def move(self, goal_x=0, goal_y=0, goal_yaw=0, x_lower_bound=-1, x_upper_bound=1, y_lower_bound=-1, y_upper_bound=1):
+    def move(self, goal_x=0, goal_y=0, goal_yaw=0, x_lower_bound=-1, x_upper_bound=1, y_lower_bound=-1,
+             y_upper_bound=1):
         # To prevent robot getting stuck or drifting towards just one specific area over course of experiment
         # Randomly send to middle of allowable area with 1% probability
         rand = random.uniform(0, 100)
@@ -59,9 +59,11 @@ class TurtleBot2D(TurtleBot, object):
                 gazebo_x = self.gazebo_pose_wrt_map.pose.pose.position.x
                 gazebo_y = self.gazebo_pose_wrt_map.pose.pose.position.y
                 rospy.loginfo(self.namespace + ': requested move to (' + str(goal_x) + ', ' + str(goal_y) + ') ' +
-                               'completed. Current gazebo odom pose is (' + str(gazebo_x) + ', ' + str(gazebo_y) + '). ' +
-                               'Current continuous odom pose is (' + str(continuous_x) + ', ' + str(continuous_y) + '). ' +
-                               'Current discrete odom pose is (' + str(discrete_x) + ', ' + str(discrete_y) + '). ')
+                              'completed. Current gazebo odom pose is (' + str(gazebo_x) + ', ' + str(
+                    gazebo_y) + '). ' +
+                              'Current continuous odom pose is (' + str(continuous_x) + ', ' + str(
+                    continuous_y) + '). ' +
+                              'Current discrete odom pose is (' + str(discrete_x) + ', ' + str(discrete_y) + '). ')
         except rospy.ROSException as e:
             rospy.logwarn(self.namespace + ': caught exception while sending move_base a movement goal - ' + e.message)
 
@@ -78,7 +80,8 @@ class TurtleBot2D(TurtleBot, object):
         command.angular.z = 0.1
         while not rospy.is_shutdown():
             cmd_vel_pub.publish(command)
-            rospy.loginfo(self.namespace + ': Current yaw is ' + str(convert_quaternion_to_yaw(self.gazebo_pose_wrt_map.pose.pose.orientation)))
+            rospy.loginfo(self.namespace + ': Current yaw is ' + str(
+                convert_quaternion_to_yaw(self.gazebo_pose_wrt_map.pose.pose.orientation)))
             rospy.sleep(0.1)
 
     @staticmethod
@@ -105,6 +108,7 @@ def main():
                    y_lower_bound=y_lower,
                    y_upper_bound=y_upper)
         rospy.sleep(5)
+
 
 if __name__ == '__main__':
     # run program and gracefully handle exit

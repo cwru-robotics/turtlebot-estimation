@@ -1,16 +1,19 @@
 #!/usr/bin/env python
 
 import rospy
-import helpers
-import copy
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from nav_msgs.msg import Odometry
+
+import helpers
 
 initial_position = None
 gazebo_odom = None
 gps_publisher = None
 
+# TODO could integrate this into noisy_gps and use parameter to control whether or not noise is added
 
+
+# Sets the initial position of the GPS
 def initial_position_cb(initial_position_msg):
     global initial_position
 
@@ -20,11 +23,13 @@ def initial_position_cb(initial_position_msg):
         rospy.logwarn('Initial position callback in fake_gps triggered twice, this should not happen!')
 
 
+# Save incoming odometry messages
 def gazebo_odom_cb(odom_msg):
     global gazebo_odom
     gazebo_odom = odom_msg
 
 
+# Publishes the GPS readings
 # Must accept event argument because of use with rospy.Timer
 def publish_gps(event):
     # Use this so discrete filter can localize w/o external measurements
@@ -35,6 +40,7 @@ def publish_gps(event):
     global gazebo_odom
 
     if None not in (initial_position, gazebo_odom):
+        # Calculate robot pose wrt map
         x_map = initial_position.pose.pose.position.x + gazebo_odom.pose.pose.position.x
         y_map = initial_position.pose.pose.position.y + gazebo_odom.pose.pose.position.y
 
@@ -66,6 +72,7 @@ def main():
     global gps_publisher
     gps_publisher = rospy.Publisher('fake_gps', PoseWithCovarianceStamped, queue_size=1, latch=True)
 
+    # Publish a GPS reading once every 10 seconds
     timer = rospy.Timer(rospy.Duration(10), publish_gps)
 
     while not rospy.is_shutdown():

@@ -1,7 +1,0 @@
-#!/bin/zsh
-# $1 is the directory to be chrooted
-sudo mount --bind /dev $1/dev
-sudo mount --bind /tmp $1/tmp
-sudo mount --bind /proc $1/proc
-sudo mount --bind /etc/resolv.conf $1/etc/resolv.conf
-sudo chroot $1 /bin/bash

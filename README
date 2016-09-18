@@ -1,0 +1,12 @@
+This software provides simulation capabilities for multiple TurtleBots in Gazebo at one time. These robots will then share their kinect sensor information with each other to increase the accuracy of their state estimate.
+
+Simple use:
+roslaunch cwru_turtlebot two_robot.launch
+
+Directory Structure:
+- analysis : Provides R scripts for summarizing data and generating reports from simulations
+- experiment_data : All saved simulation data and generated reports are saved here
+- ros_ws : All ROS packages located here.
+- scripts : Useful scripts for interacting with the hardware TurtleBot
+- xlnx_sources : Scripts to fetch all sources needed for ZedBoard, will save all retrieved sources to this directory
+- xlnx_ws : Contains ZedBoard FSBL and files needed to generate it:

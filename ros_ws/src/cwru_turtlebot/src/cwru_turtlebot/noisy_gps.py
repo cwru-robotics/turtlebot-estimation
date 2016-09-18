@@ -1,16 +1,18 @@
 #!/usr/bin/env python
 
-import rospy
-import helpers
 import numpy
+import rospy
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from nav_msgs.msg import Odometry
+
+import helpers
 
 initial_position = None
 gazebo_odom = None
 gps_publisher = None
 
 
+# Sets the initial position of the GPS
 def initial_position_cb(initial_position_msg):
     global initial_position
 
@@ -20,11 +22,13 @@ def initial_position_cb(initial_position_msg):
         rospy.logwarn('Initial position callback in fake_gps triggered twice, this should not happen!')
 
 
+# Save incoming odometry messages
 def gazebo_odom_cb(odom_msg):
     global gazebo_odom
     gazebo_odom = odom_msg
 
 
+# Publishes the GPS readings
 # Must accept event argument because of use with rospy.Timer
 def publish_gps(event):
     # Use this so discrete filter can localize w/o external measurements
@@ -35,11 +39,12 @@ def publish_gps(event):
     global gazebo_odom
 
     if None not in (initial_position, gazebo_odom):
+        # Calculate robot pose wrt map
         x_map = initial_position.pose.pose.position.x + gazebo_odom.pose.pose.position.x
         y_map = initial_position.pose.pose.position.y + gazebo_odom.pose.pose.position.y
 
-        horizontal_error = numpy.random.normal(scale=1.71)
-        theta = numpy.random.uniform(high=2*numpy.pi)
+        horizontal_error = numpy.random.normal(scale=1.71)  # Error distance
+        theta = numpy.random.uniform(high=2 * numpy.pi)  # Yaw offset of error
 
         noisy_gps = PoseWithCovarianceStamped()
         noisy_gps.header.stamp = gazebo_odom.header.stamp
@@ -47,8 +52,8 @@ def publish_gps(event):
         noisy_gps.pose.pose.position.x = x_map + horizontal_error * numpy.cos(theta)
         noisy_gps.pose.pose.position.y = y_map + horizontal_error * numpy.sin(theta)
         noisy_gps.pose.pose.position.z = 0
-        noisy_gps.pose.pose.orientation = gazebo_odom.pose.pose.orientation # Leave this alone because robot has no compass
-        # TODO create fake compass node
+        noisy_gps.pose.pose.orientation = gazebo_odom.pose.pose.orientation  # Leave this alone because robot has no compass
+        # TODO create a fake compass node to separate compass from GPS
 
         # From documentation on nav_msgs/Odometry:
         # Row-major representation of the 6x6 covariance matrix
@@ -86,6 +91,7 @@ def main():
 
     while not rospy.is_shutdown():
         rospy.spin()
+
 
 if __name__ == '__main__':
     try:

@@ -1,33 +1,26 @@
 #!/usr/bin/env python
 
+import copy
 import math
 import numpy
-import rospy
-import copy
-import helpers
-from helpers import convert_quaternion_to_yaw, convert_yaw_to_quaternion
-
-# Action server imports
-# TODO need to switch from SimpleActionServer to ActionServer so that new goals don't preempt old ones
 
 import actionlib
-from cwru_turtlebot.msg import ExternalPoseAction, ExternalPoseGoal
-from move_base_msgs.msg import MoveBaseAction
+import rospy
 
-# Publish/Subscribe type imports
-from sensor_msgs.msg import LaserScan
-from geometry_msgs.msg import PoseWithCovarianceStamped, Quaternion
+from cwru_turtlebot.msg import ExternalPoseAction, ExternalPoseGoal, ScanWithVariance, ScanWithVarianceStamped
+from geometry_msgs.msg import PoseWithCovarianceStamped
+from move_base_msgs.msg import MoveBaseAction
 from nav_msgs.msg import Odometry
-from cwru_turtlebot.msg import ScanWithVariance, ScanWithVarianceStamped
+from robot_localization.srv import SetPose, SetPoseRequest
+from sensor_msgs.msg import LaserScan
 from std_msgs.msg import UInt64
 
-# Service type imports
-from robot_localization.srv import SetPose, SetPoseRequest
+import helpers
+from helpers import convert_quaternion_to_yaw, convert_yaw_to_quaternion
 
 
 # Base class for all TurtleBots
 class TurtleBot:
-
     def __init__(self, rate=10):
         rospy.loginfo('Starting turtlebot constructor')
         debug = rospy.get_param('/debug')
@@ -54,7 +47,7 @@ class TurtleBot:
 
         self.initialize_publishers()
 
-        #self.external_pose_publisher.publish()
+        # self.external_pose_publisher.publish()
 
         self.initialize_action_servers()
 
@@ -79,7 +72,7 @@ class TurtleBot:
         self.initialize_subscribers()
 
         # Wait for everything else in Gazebo world to be ready
-        #rospy.sleep(2)  # Sleep to avoid crash due to get/set of param in rapid succession,
+        # rospy.sleep(2)  # Sleep to avoid crash due to get/set of param in rapid succession,
         self.wait_for_clients()
 
         # Once everything is ready we need to reset our filters
@@ -111,9 +104,9 @@ class TurtleBot:
                                                         queue_size=1)
 
         self.initial_position_publisher = rospy.Publisher('initial_position',
-                                                  PoseWithCovarianceStamped,
-                                                  queue_size=1,
-                                                  latch=True)
+                                                          PoseWithCovarianceStamped,
+                                                          queue_size=1,
+                                                          latch=True)
 
         # Publisher for poses received from other robots, used as input to UKF
         self.external_pose_publisher = rospy.Publisher('external_poses',
@@ -144,7 +137,7 @@ class TurtleBot:
         for param in param_list:
             if (param.endswith("server_started") and
                     not param.startswith(rospy.get_namespace()) and
-                    rospy.get_param(param) is True):
+                        rospy.get_param(param) is True):
                 # Parameter indicates action server exists, is a different robot, and has been started
                 server_name = param.replace("server_started", "external_pose_action")
                 rospy.logdebug(self.namespace + ': Found server with name: ' + server_name)
@@ -225,7 +218,7 @@ class TurtleBot:
 
             self.most_recent_scan = processed_scan
             self.send_scan_to_clients(processed_scan)
-        # rospy.logdebug(self.namespace + ': Exiting scan callback')
+            # rospy.logdebug(self.namespace + ': Exiting scan callback')
 
     def continuous_odom_callback(self, odom):
         # Must add initial pose value to convert from odom frame to map frame
@@ -275,7 +268,7 @@ class TurtleBot:
                     rospy.logwarn(self.namespace + ': A client returned unsucessfully when sent a pose measurement')
             except rospy.ROSException as e:
                 rospy.logwarn(self.namespace + ': Sending scan to clients caught exception: ' + e.message)
-        # rospy.logdebug(self.namespace + ': Finished sending scan to clients')
+                # rospy.logdebug(self.namespace + ': Finished sending scan to clients')
 
     def convert_scan_to_pose(self, scan):
         # rospy.logdebug(self.namespace + ': Converting scan to pose')
@@ -288,7 +281,8 @@ class TurtleBot:
             current_x = self.discrete_pose_wrt_map.pose.pose.position.x
             current_y = self.discrete_pose_wrt_map.pose.pose.position.y
             # TODO find why discrete filter is not correctly getting orientation
-            current_yaw = convert_quaternion_to_yaw(self.gazebo_pose_wrt_map.pose.pose.orientation) + scan.scan.yaw_offset
+            current_yaw = convert_quaternion_to_yaw(
+                self.gazebo_pose_wrt_map.pose.pose.orientation) + scan.scan.yaw_offset
 
             # Determine what pose (in the map frame) we believe we are seeing the other robot at
             # Add 0.2 (turtlebot radius) to more evenly distribute pose estimates non-deterministically
@@ -390,7 +384,7 @@ class TurtleBot:
     def reset_filters(self):
         rospy.loginfo(self.namespace + ': Resetting filters...')
         error = False
-        #TODO add logic here to timeout while waiting and raise an error
+        # TODO add logic here to timeout while waiting and raise an error
         # First reset the continuous filter
         rospy.wait_for_service('set_pose_continuous')
         try:

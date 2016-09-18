@@ -1,10 +1,17 @@
 #!/usr/bin/env Rscript
 
-data_dir <- "/home/matt/thesis/experiment_data"
+# R Script to analyze data from experiments
+# Usage is analyze_data.R experiment1 experiment2...
+# If experiment names to render are not specified then all experiments are rendered
+
+# Must change the data_dir to your user directory!
+# TODO make this use environment variable to detect home directory
+data_dir <- "/home/USER/thesis/experiment_data"
 dirs <- list.dirs(path=data_dir, recursive=FALSE) # Find all experiments in the data_dir
 report_dir <- paste0(data_dir, "/reports") # Create a subdirectory in the data_dir to store reports
 args <- commandArgs(trailingOnly = TRUE)
 
+# Function to generate reports for all data in the data_dir if no argument was passed into function call
 renderAll <- function() {
     message("No args received, rendering all experiments")
     for (directory in 1:length(dirs)){
@@ -13,7 +20,7 @@ renderAll <- function() {
 
         if (experiment_name != "reports" && experiment_name != "old") {
             message(paste0("Rendering experiment ", experiment_name))
-            for (file in 1:length(files)) {
+            for (file in 1:length(files)) { # Generate a report for each robot in the experiment
                 if (file < 10) {
                     robot_number <- substr(files[file], 10, 10)
                 }
@@ -28,6 +35,7 @@ renderAll <- function() {
                                   quiet=TRUE)
             }
 
+            # Generate a report for the experiment as a whole
             rmarkdown::render('experiment.Rmd',
                               params=list(experiment=experiment_name, robots=length(files)),
                               output_file=paste0(experiment_name, ".pdf"),
@@ -37,6 +45,7 @@ renderAll <- function() {
     }
 }
 
+# Renders specific experiments that were passed in as args to script call
 renderSome <- function() {
     message("Some args received, only rendering specified experiments")
     for (directory in 1:length(dirs)){

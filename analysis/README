@@ -1,0 +1,11 @@
+These scripts automatically analyze experiment data and generate reports.
+
+Simple usage:
+1. First edit analyze_data.R to contain the correct path to your experiment data directory.
+2. ./analyze_data.R
+
+Files and their functions:
+- analyze_data.R : Top-level script. Accepts optional experiment name arguments, otherwise generates reports for all experiments in the experiment_data directory. 
+- experiment.Rmd : R Markdown file to generate report summarizing data from all robots in a specific experiment
+- experiment.R : Contains source code called from experiment.Rmd
+- robot.Rmd and robot.R : Same as experiment files but generates a report for each specific robot in the experiment

@@ -1,0 +1,12 @@
+cwru_turtlebot source files
+
+File descriptions:
+- helpers.py : Helper functions for multiple other files to import
+- noiseless_gps.py : Publishes a noiseless GPS signal based on Gazebo odometry
+- noisy_gps.py : Publishes a noisy GPS signal based on Gazebo odometry
+- sensor_record.py : Saves all simulation data into CSV files
+- sensor_remap.py : Adds noise to odometry and remaps messages to different frame_id to allow filters to function properly
+- simulation_timer.py : Controls simulation runtime
+- stationary_turtlebot.py : Class for a TurtleBot that does not move
+- turtlebot_2d.py : Class for a planar TurtleBot
+- turtlebot.py : Base class for StationaryTurtleBot and 2DTurtleBot

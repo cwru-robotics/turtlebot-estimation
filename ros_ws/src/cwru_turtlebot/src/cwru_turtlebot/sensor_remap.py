@@ -1,42 +1,35 @@
 #!/usr/bin/env python
 
-import rospy
-import math
-import helpers
 import copy
+import math
 import numpy
-from sensor_msgs.msg import Imu
+import rospy
+from geometry_msgs.msg import Pose2D
 from nav_msgs.msg import Odometry
-from numpy.random import randn, normal
+from numpy.random import normal
+from sensor_msgs.msg import Imu
+
+import helpers
 from helpers import convert_quaternion_to_yaw, convert_yaw_to_quaternion
-from geometry_msgs.msg import Pose2D, PoseWithCovarianceStamped
 
 # get the current namespace
 namespace = None
+
+# Previous step information
 previous_noisy_pose = None
 previous_noisy_odom = None
 previous_noisy_time = None
 previous_noiseless_pose = None
 previous_noiseless_odom = None
 previous_noiseless_time = None
-# initial_pose = None
+
+# Publisher objects
 imu_publisher = None
 odom_publisher = None
 noisy_odom_publisher = None
 
-# previous_clean_odom = None
 
-# def initial_position_callback(position):
-#      # Record the initial position of the robot so that we can convert the odometry values from the robot's odom frame
-#      # to the map frame
-#      global initial_pose
-#
-#      initial_pose = Pose2D()
-#      initial_pose.x = position.pose.pose.position.x
-#      initial_pose.y = position.pose.pose.position.y
-#      initial_pose.theta = convert_quaternion_to_yaw(position.pose.pose.orientation)
-
-
+# Remaps the IMU message to have the base_link_filter frame_id
 def imu_remap(imu_msg):
     global namespace
     # global noisy
@@ -45,30 +38,13 @@ def imu_remap(imu_msg):
     remapped_msg = imu_msg
     remapped_msg.header.frame_id = namespace + 'base_link_filter'
 
-    # if noisy:
-    #     # We will add noise to the IMU data
-    #     noise = randn(7, 1)
-    #
-    #     orientation = remapped_msg.orientation
-    #     noisy_yaw = convert_quaternion_to_yaw(orientation) + noise[0]
-    #     orientation = convert_yaw_to_quaternion(noisy_yaw)
-    #
-    #     angular_velocity = remapped_msg.angular_velocity
-    #     angular_velocity.x += noise[1]
-    #     angular_velocity.y += noise[2]
-    #     angular_velocity.z += noise[3]
-    #
-    #     linear_acceleration = remapped_msg.linear_acceleration
-    #     linear_acceleration.x += noise[4]
-    #     linear_acceleration.y += noise[5]
-    #     linear_acceleration.z += noise[6]
-
     try:
         imu_publisher.publish(remapped_msg)
     except rospy.ROSException as e:
         rospy.logwarn(e.message)
 
 
+# Create remapped odom message for input to filter
 def odom_remap(odom_msg):
     global namespace
     global previous_noiseless_pose
@@ -105,12 +81,16 @@ def odom_remap(odom_msg):
     noiseless_odom.child_frame_id = namespace + 'base_footprint_filter'
 
     # Split movement into three distinct actions, rotate -> translate -> rotate
-    delta_rotation_1 = helpers.correct_angle(math.atan2(current_odom.y - previous_noiseless_odom.y, current_odom.x - previous_noiseless_odom.x) - previous_noiseless_odom.theta)
-    delta_translation = math.sqrt((previous_noiseless_odom.x - current_odom.x) ** 2 + (previous_noiseless_odom.y - current_odom.y) ** 2)
+    delta_rotation_1 = helpers.correct_angle(math.atan2(current_odom.y - previous_noiseless_odom.y,
+                                                        current_odom.x - previous_noiseless_odom.x) - previous_noiseless_odom.theta)
+    delta_translation = math.sqrt(
+        (previous_noiseless_odom.x - current_odom.x) ** 2 + (previous_noiseless_odom.y - current_odom.y) ** 2)
     delta_rotation_2 = helpers.correct_angle(current_odom.theta - previous_noiseless_odom.theta - delta_rotation_1)
 
-    noiseless_odom.pose.pose.position.x = previous_noiseless_pose.x + delta_translation * math.cos(previous_noiseless_pose.theta + delta_rotation_1)
-    noiseless_odom.pose.pose.position.y = previous_noiseless_pose.y + delta_translation * math.sin(previous_noiseless_pose.theta + delta_rotation_1)
+    noiseless_odom.pose.pose.position.x = previous_noiseless_pose.x + delta_translation * math.cos(
+        previous_noiseless_pose.theta + delta_rotation_1)
+    noiseless_odom.pose.pose.position.y = previous_noiseless_pose.y + delta_translation * math.sin(
+        previous_noiseless_pose.theta + delta_rotation_1)
     noiseless_odom_yaw = previous_noiseless_pose.theta + delta_rotation_1 + delta_rotation_2
     noiseless_odom.pose.pose.orientation = convert_yaw_to_quaternion(noiseless_odom_yaw)
 
@@ -161,6 +141,7 @@ def odom_remap(odom_msg):
     previous_noiseless_time = current_time
 
 
+# Create remapped odom message and add noise for input to filter
 def noisy_odom_remap(odom_msg):
     global namespace
     global previous_noisy_pose
@@ -215,8 +196,10 @@ def noisy_odom_remap(odom_msg):
 
     for i in range(1, 1000):
         # Split movement into three distinct actions, rotate -> translate -> rotate
-        delta_rotation_1 = helpers.correct_angle(math.atan2(current_odom.y - previous_noisy_odom.y, current_odom.x - previous_noisy_odom.x) - previous_noisy_odom.theta)
-        delta_translation = math.sqrt((previous_noisy_odom.x - current_odom.x) ** 2 + (previous_noisy_odom.y - current_odom.y) ** 2)
+        delta_rotation_1 = helpers.correct_angle(math.atan2(current_odom.y - previous_noisy_odom.y,
+                                                            current_odom.x - previous_noisy_odom.x) - previous_noisy_odom.theta)
+        delta_translation = math.sqrt(
+            (previous_noisy_odom.x - current_odom.x) ** 2 + (previous_noisy_odom.y - current_odom.y) ** 2)
         delta_rotation_2 = helpers.correct_angle(current_odom.theta - previous_noisy_odom.theta - delta_rotation_1)
 
         # Create random pose from given movements by adding noise
@@ -229,8 +212,10 @@ def noisy_odom_remap(odom_msg):
         std_dev_3 = alpha_1 * abs(delta_rotation_2) + alpha_2 * delta_translation
         delta_rotation_2_hat = delta_rotation_2 - normal(scale=std_dev_3)
 
-        noisy_odom.pose.pose.position.x = previous_noisy_pose.x + delta_translation_hat * math.cos(previous_noisy_pose.theta + delta_rotation_1_hat)
-        noisy_odom.pose.pose.position.y = previous_noisy_pose.y + delta_translation_hat * math.sin(previous_noisy_pose.theta + delta_rotation_1_hat)
+        noisy_odom.pose.pose.position.x = previous_noisy_pose.x + delta_translation_hat * math.cos(
+            previous_noisy_pose.theta + delta_rotation_1_hat)
+        noisy_odom.pose.pose.position.y = previous_noisy_pose.y + delta_translation_hat * math.sin(
+            previous_noisy_pose.theta + delta_rotation_1_hat)
         noisy_odom_yaw = previous_noisy_pose.theta + delta_rotation_1_hat + delta_rotation_2_hat
         noisy_odom.pose.pose.orientation = convert_yaw_to_quaternion(noisy_odom_yaw)
 
@@ -269,7 +254,8 @@ def noisy_odom_remap(odom_msg):
                                   0, 0, 0, 0, 0, 0,
                                   0, 0, 0, 0, 0, 0,
                                   0, 0, 0, 0, 0, 0,
-                                  0, 0, 0, 0, 0, numpy.var(noisy_odom_yaw_list)]  # yaw variance taken from Gazebo odometry
+                                  0, 0, 0, 0, 0,
+                                  numpy.var(noisy_odom_yaw_list)]  # yaw variance taken from Gazebo odometry
     # Twist covariance copied from position covariance TODO this definitely wrong
     noisy_odom.twist.covariance = [numpy.var(noisy_odom_x_vel_list), 0, 0, 0, 0, 0,  # x_vel variance
                                    0, numpy.var(noisy_odom_y_vel_list), 0, 0, 0, 0,  # y_vel variance
@@ -278,8 +264,6 @@ def noisy_odom_remap(odom_msg):
                                    0, 0, 0, 0, 0, 0,
                                    0, 0, 0, 0, 0, numpy.var(noisy_odom_yaw_vel_list)]  # yaw_vel variance
 
-
-
     # Publish noisy odom message
     try:
         rospy.logdebug('Publishing noisy odom message')
@@ -287,12 +271,13 @@ def noisy_odom_remap(odom_msg):
     except rospy.ROSException as e:
         rospy.logwarn(e.message)
 
-    rospy.logdebug('Calculated new noisy odom pose. Previous pose was ' + str(previous_noisy_pose) + ',\n previous odom was ' +
-                   str(previous_noisy_odom) + ',\n current odom was ' + str(current_odom) + ',\n and new noisy pose is ' +
-                   str(noisy_odom))
+    rospy.logdebug(
+        'Calculated new noisy odom pose. Previous pose was ' + str(previous_noisy_pose) + ',\n previous odom was ' +
+        str(previous_noisy_odom) + ',\n current odom was ' + str(current_odom) + ',\n and new noisy pose is ' +
+        str(noisy_odom))
     rospy.logdebug('d_rot_1 noise was ' + str(delta_rotation_1_hat - delta_rotation_1) + '\n d_trans noise was ' +
-                  str(delta_translation_hat - delta_translation) + '\n d_rot_2 noise was ' +
-                  str(delta_rotation_2_hat - delta_rotation_2))
+                   str(delta_translation_hat - delta_translation) + '\n d_rot_2 noise was ' +
+                   str(delta_rotation_2_hat - delta_rotation_2))
 
     # Increment previous pose for use with next message
     previous_noisy_pose.x = noisy_odom.pose.pose.position.x
@@ -339,6 +324,7 @@ def main():
     # just run this to pub/sub to the robot
     while not rospy.is_shutdown():
         rospy.spin()
+
 
 if __name__ == '__main__':
     try:

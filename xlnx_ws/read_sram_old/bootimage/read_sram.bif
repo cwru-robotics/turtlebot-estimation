@@ -1,5 +1,0 @@
-the_ROM_image:
-{
-	[bootloader]/home/matt/xlnx_ws/FSBL/Debug/FSBL.elf
-	/home/matt/xlnx_ws/read_sram/Debug/read_sram.elf
-}
